@@ -65,12 +65,14 @@
 	      (eps "dup~%"))
 	    (index (i)
 	      (eps "~d index~%" i))
-	    (dot (&optional (radius .9))
+	    (dot ())
+	    (dotp (&optional (radius .9))
 	      (currentpoint) ;; put current position on stack
 	      (index 1) ;; duplicate the two coordinates for arc and moveto
 	      (index 1)
 	      (eps "~f 0 360 arc~%" radius)
-	      (eps "moveto~%"))
+	      (eps "moveto~%")
+	      )
 	    (fills ()
 	      (eps "fill~%"))
 	    (clip ()
@@ -105,7 +107,7 @@ closepath
 %%LanguageLevel: 2 
 %%Pages: (atend)
 %%PageOrder: Ascend
-%%BoundingBox: 0 0 800 400
+%%BoundingBox: 0 0 400 400
 %%EndComments
 %%BeginProlog
 %%EndProlog
@@ -123,21 +125,22 @@ closepath
      (start) 
      (eps "%%Page: 1 1~%page-begin~%")
      (setgray .4)
-     (text 750 12 (format nil "~d/28" 2))
-     (setlinewidth .2)
-     (eps "1 setlinejoin~%")
-     (let* ((f1 100)
+     ;(text 750 12 (format nil "~d/28" 2))
+     (setlinewidth .5)
+     (eps "2 setlinejoin~%")
+     (let* ((f1 80)
 	    (eta1 .5)
 	    (r1 10)
-	    (kappa1 .4)
+	    (kappa1 .8)
 	    (alpha1 (atan (/ (* r1 kappa1)
 			 f1)))
-	    (f2 100)
-	    (f3 100)
+	    (beta (* (/ PI 180) 2.5))
+	    (f2 60)
+	    (f3 80)
 	    (eta3 .3)
-	    (f4 90)
+	    (f4 63)
 	    (eta4 .7)
-	    (f5 20))
+	    (f5 12))
        (moveto 10 200)
        (let* ((fern1 (fern eta1 f1))
 	      (q (/ (* fern1 (sin alpha1))
@@ -174,6 +177,14 @@ closepath
 	     (rlineto 0 (- xi (fern eta3 f3)))    ;; BFP
 	     (rlineto 0 (- f5))		       ;; L5
 	     (rlineto xi (- f5))		       ;; object
+	     ;; fluorescent beam
+	     (rlineto xi f5) ;; L5
+	     (rlineto 0 f5) ;; BFP
+	     (rlineto 0 (+ xi (fern eta4 f4))) ;; D1
+	     (rlineto (- (nah eta4 f4) xi) 0) ;; L4
+	     (rlineto f4 (- xi)) ;; CCD
+	     (rlineto (- f4) (- xi)) ;; L4
+	     (rlineto (- (+ (nah eta4 f4) xi)) 0) 
 	     (stroke)
 	     (moveto 10 200) ;; ray that goes down, and will be absorbed in B1
 	     (let* ((qu (/ (* fern1 (sin alpha1))
@@ -192,12 +203,25 @@ closepath
 	       (dot)
 	       (rlineto r1 f1) ;; MMA
 	       (dot)
-	       (let* ((beta (* (/ PI 180) 1.8))
+	       (let* (
 		     ; distance between central beam and deflected beam on lens
 		     (b (* f1 (- ta (tan (- alpha1 beta))))))
 		 (rlineto (- r1 b) (- f1))
 		 (rmoveto (* kappa1 r1) 0) ;; draw deflected central beam
-		 (rlineto (- (- r1 b)) f1)))
+		 (rlineto (- (- r1 b)) f1) ;; L1
+		 (rmoveto (- r1 b) (- f1))
+		 (rlineto 0 (- b (nah eta1 f1)))
+		 ;; move back to deflected margin ray on L1
+		 (rmoveto (* -1 kappa1 r1) (- (nah eta1 f1) b))
+		 (let* ((p (/ (* (sin alpha1) (+ b fern1))
+			      (sin (- (/ pi 4) alpha1))))
+			(sigma (/ p (sqrt 2))))
+		  (rlineto (- (* kappa1 r1) sigma) (- (- f1 sigma b fern1))) ;; M1
+		  ;; draw central beam towards B1
+		  (rmoveto sigma (- sigma))
+		  (rlineto (+ fern1 b) 0)
+		  ;; draw marginal beam from B1 towards M1
+		  (rlineto (- (+ fern1 b sigma)) sigma))))
 	     )
 	   ))
 
